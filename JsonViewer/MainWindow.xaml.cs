@@ -1,13 +1,14 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using Newtonsoft.Json.Linq;
+﻿using JsonViewer.Model;
 using Microsoft.Win32;
-using System.IO;
-using System.Windows.Media;
+using Newtonsoft.Json.Linq;
 using System;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
-using JsonViewer.Model;
-using System.Windows.Threading;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Media;
 
 namespace JsonViewer
 {
@@ -16,6 +17,8 @@ namespace JsonViewer
     /// </summary>
     public partial class MainWindow : Window
     {
+        private delegate void AutoDelegate();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -63,11 +66,10 @@ namespace JsonViewer
                 {
                     string jsonContent = File.ReadAllText(path);
                     JToken token = JToken.Parse(jsonContent);
-                    return BuildLogicalTree("", token);
+                    return BuildLogicalTree("Json", token);
                 });
 
                 JsonTreeView.Items.Clear();
-                //AddNodesToTreeView(rootNode);
                 JsonTreeView.Items.Add(BuildVisualTree(rootNode));
                 JsonTreeView.Visibility = Visibility.Visible;
             }
@@ -106,42 +108,147 @@ namespace JsonViewer
 
             return node;
         }
+
         private TreeViewItem BuildVisualTree(JsonNode node)
         {
-            string header = node.Value != null
-                ? $"{node.Name}: {node.Value}"
-                : node.Name;
+            TextBlock textBlock = GetTextNode(node);
 
-            TextBlock textBlock = new TextBlock
-            {
-                Text = header,
-                Foreground = GetColorForValue(node.Type)
-            };
-
-            TreeViewItem item = new TreeViewItem { Header = textBlock };
+            TreeViewItem item = new TreeViewItem { Header = textBlock, Tag = node };
 
             foreach (JsonNode child in node.Children)
             {
-                item.Items.Add(BuildVisualTree(child));
+                TextBlock childTextBlock = GetTextNode(child);
+                TreeViewItem childItem = new TreeViewItem { Header = $"{childTextBlock}", Tag = child };
+                item.Items.Add(childItem);
             }
-
+            item.Expanded += TreeViewItem_Expanded;
+            item.Collapsed += TreeViewItem_Collapsed;
             return item;
         }
-        private void AddNodesToTreeView(JsonNode node)
-        {
-            // Aggiungi il nodo principale
-            TreeViewItem treeViewItem = BuildVisualTree(node);
-            JsonTreeView.Items.Add(treeViewItem);
 
-            // Aggiungi i figli in modo incrementale, senza bloccare la UI
-            foreach (JsonNode child in node.Children)
+        private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
+        {
+            if (e.RoutedEvent != null) e.Handled = true;
+
+            TreeViewItem item = sender as TreeViewItem;
+            if (item == null)
             {
-                // Per ogni figlio, aggiungilo con un piccolo delay, garantendo un caricamento progressivo
-                Dispatcher.InvokeAsync(() =>
-                {
-                    treeViewItem.Items.Add(BuildVisualTree(child));
-                }, DispatcherPriority.Background);  // Usando una bassa priorità per non bloccare la UI
+                return;
             }
+
+            JsonNode node = item.Tag as JsonNode;
+            if (node.IsExpanded)
+            {
+                item.Header = OpenParentesis(node);
+                return;
+            }
+            if (node.Children.Count > 0)
+            {
+                item.Header = GetTextNode(node, "Loading...");
+                item.Items.Clear();
+                await Task.Yield();
+                await Task.Run(() => { Thread.Sleep(50); });
+
+                foreach (JsonNode child in node.Children)
+                {
+                    item.Items.Add(BuildVisualTree(child));
+                }
+                item.Header = OpenParentesis(node);
+                item.Items.Add(CloseParentesis(node));
+            }
+            node.IsExpanded = true;
+        }
+        private async void TreeViewItem_Collapsed(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            TreeViewItem item = sender as TreeViewItem;
+            if (item == null)
+            {
+                return;
+            }
+            JsonNode node = item.Tag as JsonNode;
+            item.Header = GetTextNode(node);
+        }
+
+        private TextBlock OpenParentesis(JsonNode node)
+        {
+            string header = String.Empty;
+            switch (node.Type)
+            {
+                case JTokenType.Array:
+                    header = $"[{node.Children.Count} items";
+                    break;
+                case JTokenType.Object:
+                    header = $"{{{node.Children.Count} props";
+                    break;
+            }
+
+            TextBlock textBlock = new TextBlock();
+            textBlock.Inlines.Add(new Run($"{node.Name} : ") { Foreground = Brushes.DarkBlue });
+            textBlock.Inlines.Add(new Run(header) { Foreground = GetColorForValue(node.Type) });
+            textBlock.FontSize = 20;
+
+            return textBlock;
+        }
+        private TreeViewItem CloseParentesis(JsonNode node)
+        {
+            string header = String.Empty;
+            switch (node.Type)
+            {
+                case JTokenType.Array:
+                    header = "]";
+                    break;
+                case JTokenType.Object:
+                    header = "}";
+                    break;
+            }
+            TreeViewItem item = new TreeViewItem
+            {
+                Header = header,
+                Foreground = GetColorForValue(node.Type)
+            };
+            item.FontSize = 20;
+            return item;
+        }
+        private TextBlock GetTextNode(JsonNode node, string message = "")
+        {
+            String valueType = String.Empty;
+            if (String.IsNullOrEmpty(message))
+            {
+                switch (node.Type)
+                {
+                    case JTokenType.Array:
+                        valueType = $"[{node.Children.Count} items]";
+                        break;
+                    case JTokenType.Object:
+                        valueType = $"{{{node.Children.Count} props}}";
+                        break;
+                    case JTokenType.Null:
+                        valueType = " null";
+                        break;
+                    default:
+                        valueType = node.Value != null ? $"{node.Value}  ({node.Type.ToString()})" : $" ({node.Type.ToString()})";
+                        break;
+                }
+            }
+            else
+            {
+                switch (node.Type)
+                {
+                    case JTokenType.Array:
+                        valueType = $"[{message}";
+                        break;
+                    case JTokenType.Object:
+                        valueType = $"{{{message}";
+                        break;
+                }
+            }
+
+            TextBlock textBlock = new TextBlock();
+            textBlock.Inlines.Add(new Run($"{node.Name} : ") { Foreground = Brushes.DarkBlue });
+            textBlock.Inlines.Add(new Run(valueType) { Foreground = GetColorForValue(node.Type) });
+            textBlock.FontSize = 20;
+            return textBlock;
         }
         private string GetValuePreview(JValue token)
         {
@@ -234,16 +341,40 @@ namespace JsonViewer
         #endregion
 
         #region ############################ ESPANDI E COLLASSA ############################
-        private void ExpandNodeRecursive(TreeViewItem item)
+        private async Task ExpandNodeRecursive(TreeViewItem item)
         {
+            if (item == null) return;
+
+            // Recupera il JsonNode associato
+            JsonNode node = item.Tag as JsonNode;
+            if (node == null) return;
+
+            // Se non è ancora espanso, simuliamo il caricamento
+            if (!node.IsExpanded)
+            {
+                item.Header = GetTextNode(node, "Loading...");
+                item.Items.Clear();
+
+                // Aspetta per far respirare la UI
+                await Task.Delay(5);
+
+                foreach (JsonNode child in node.Children)
+                {
+                    TreeViewItem visual = BuildVisualTree(child);
+                    item.Items.Add(visual);
+                }
+
+                item.Header = GetTextNode(node);
+                node.IsExpanded = true;
+            }
+
+            // Espandi il nodo visivamente
             item.IsExpanded = true;
 
-            foreach (var childItem in item.Items)
+            // Ricorsione sui figli
+            foreach (TreeViewItem childItem in item.Items)
             {
-                if (childItem is TreeViewItem child)
-                {
-                    ExpandNodeRecursive(child);
-                }
+                await ExpandNodeRecursive(childItem);
             }
         }
         private void CollapseNodeRecursive(TreeViewItem item)

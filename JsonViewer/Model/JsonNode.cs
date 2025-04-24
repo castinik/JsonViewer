@@ -10,8 +10,9 @@ namespace JsonViewer.Model
     class JsonNode
     {
         public string Name { get; set; }
-        public string Value { get; set; } // Se è un valore semplice
+        public string Value { get; set; }
         public JTokenType Type { get; set; }
+        public bool IsExpanded { get; set; } = false;
         public List<JsonNode> Children { get; set; } = new List<JsonNode>();
     }
 }
