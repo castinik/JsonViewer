@@ -2,8 +2,11 @@
 .vs/
 
 # Build output
-bin/
-obj/
+JsonViewer/bin/
+JsonViewer/obj/
+JsonViewer/Properties/
+
+packages
 
 # File temporanei di Visual Studio
 *.user
