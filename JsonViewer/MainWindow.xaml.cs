@@ -25,7 +25,7 @@ namespace JsonViewer
         }
 
         #region ############################ INPUT UTENTE ############################
-        private void OpenJsonFile_Click(object sender, RoutedEventArgs e)
+        private void OpenJsonFile_Left_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
@@ -35,19 +35,46 @@ namespace JsonViewer
             if (dialog.ShowDialog() == true)
             {
                 FilePathLabel.Text = dialog.FileName;
-                CaricaFileJSON(dialog.FileName);
+                CaricaFileJSON(dialog.FileName, "L");
             }
         }
-        private void EspandiTutto_Click(object sender, RoutedEventArgs e)
+        private void OpenJsonFile_Right_Click(object sender, RoutedEventArgs eventArgs)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Filter = "File JSON (*.json)|*.json|Tutti i file (*.*)|*.*"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                FilePathLabelRight.Text = dialog.FileName;
+                CaricaFileJSON(dialog.FileName, "R");
+            }
+        }
+        private void EspandiTutto_Left_Click(object sender, RoutedEventArgs e)
         {
             foreach (var item in JsonTreeView.Items)
             {
                 ExpandNodeRecursive((TreeViewItem)item);
             }
         }
-        private void CollassaTutto_Click(object sender, RoutedEventArgs e)
+        private void EspandiTutto_Right_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in JsonTreeViewRight.Items)
+            {
+                ExpandNodeRecursive((TreeViewItem)item);
+            }
+        }
+        private void CollassaTutto_Left_Click(object sender, RoutedEventArgs e)
         {
             foreach (var item in JsonTreeView.Items)
+            {
+                CollapseNodeRecursive((TreeViewItem)item);
+            }
+        }
+        private void CollassaTutto_Right_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in JsonTreeViewRight.Items)
             {
                 CollapseNodeRecursive((TreeViewItem)item);
             }
@@ -55,12 +82,22 @@ namespace JsonViewer
         #endregion
 
         #region ############################ CREAZIONE ALBERO ############################
-        private async void CaricaFileJSON(string path)
+        private async void CaricaFileJSON(string path, String from)
         {
+            TreeView treeView = new TreeView();
+            switch (from)
+            {
+                case "L":
+                    treeView = JsonTreeView;
+                    break;
+                case "R":
+                    treeView = JsonTreeViewRight;
+                    break;
+            }
             try
             {
                 LoadingBar.Visibility = Visibility.Visible;
-                JsonTreeView.Visibility = Visibility.Hidden;
+                treeView.Visibility = Visibility.Hidden;
 
                 JsonNode rootNode = await Task.Run(() =>
                 {
@@ -69,9 +106,9 @@ namespace JsonViewer
                     return BuildLogicalTree("Json", token);
                 });
 
-                JsonTreeView.Items.Clear();
-                JsonTreeView.Items.Add(BuildVisualTree(rootNode));
-                JsonTreeView.Visibility = Visibility.Visible;
+                treeView.Items.Clear();
+                treeView.Items.Add(BuildVisualTree(rootNode));
+                treeView.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
             {
@@ -82,6 +119,7 @@ namespace JsonViewer
                 LoadingBar.Visibility = Visibility.Collapsed;
             }
         }
+        
         private JsonNode BuildLogicalTree(string name, JToken token)
         {
             JsonNode node = new JsonNode
@@ -108,7 +146,6 @@ namespace JsonViewer
 
             return node;
         }
-
         private TreeViewItem BuildVisualTree(JsonNode node)
         {
             TextBlock textBlock = GetTextNode(node);
@@ -118,14 +155,13 @@ namespace JsonViewer
             foreach (JsonNode child in node.Children)
             {
                 TextBlock childTextBlock = GetTextNode(child);
-                TreeViewItem childItem = new TreeViewItem { Header = $"{childTextBlock}", Tag = child };
+                TreeViewItem childItem = new TreeViewItem { Header = childTextBlock, Tag = child };
                 item.Items.Add(childItem);
             }
             item.Expanded += TreeViewItem_Expanded;
             item.Collapsed += TreeViewItem_Collapsed;
             return item;
         }
-
         private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
         {
             if (e.RoutedEvent != null) e.Handled = true;
@@ -348,8 +384,10 @@ namespace JsonViewer
             JsonNode node = item.Tag as JsonNode;
             if (node == null) return;
 
+            // Se il nodo è gia stato espanso
             if (!node.IsExpanded)
             {
+                // Se il nodo ha figli
                 if (node.Children.Count > 0)
                 {
                     item.Header = GetTextNode(node, "Loading...");
@@ -367,16 +405,14 @@ namespace JsonViewer
                     item.Header = OpenParentesis(node);
                     item.Items.Add(CloseParentesis(node));
                 }
-                else
-                {
-                    item.Header = GetTextNode(node);
-                }
                 node.IsExpanded = true;
             }
-
             // Espande visivamente il nodo
             item.IsExpanded = true;
-
+            if (node.Children.Count == 0)
+            {
+                item.Header = GetTextNode(node);
+            }
             // Delay leggero per non congelare l'interfaccia
             await Task.Delay(10);
 
@@ -389,7 +425,7 @@ namespace JsonViewer
         {
             item.IsExpanded = false;
 
-            foreach (var childItem in item.Items)
+            foreach (ItemsControl childItem in item.Items)
             {
                 if (childItem is TreeViewItem child)
                 {

@@ -16,3 +16,22 @@ C:\Users\Nicolo Castagnoli\Documents\Lavoro\Tools\JsonViewer\JsonViewer\obj\Debu
 C:\Users\Nicolo Castagnoli\Documents\Lavoro\Tools\JsonViewer\JsonViewer\obj\Debug\JsonViewer.csproj.CopyComplete
 C:\Users\Nicolo Castagnoli\Documents\Lavoro\Tools\JsonViewer\JsonViewer\obj\Debug\JsonViewer.exe
 C:\Users\Nicolo Castagnoli\Documents\Lavoro\Tools\JsonViewer\JsonViewer\obj\Debug\JsonViewer.pdb
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\bin\Debug\JsonViewer.exe.config
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\bin\Debug\JsonViewer.exe
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\bin\Debug\JsonViewer.pdb
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\bin\Debug\Newtonsoft.Json.dll
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\bin\Debug\Newtonsoft.Json.xml
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer.csproj.AssemblyReference.cache
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\MainWindow.g.cs
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\App.g.cs
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer_Content.g.cs
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer_MarkupCompile.cache
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer_MarkupCompile.lref
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\MainWindow.baml
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer.g.resources
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer.Properties.Resources.resources
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer.csproj.GenerateResource.cache
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer.csproj.CoreCompileInputs.cache
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer.csproj.Up2Date
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer.exe
+D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer.pdb
