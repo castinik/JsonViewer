@@ -1,0 +1,22 @@
+﻿# Cartella Visual Studio
+.vs/
+
+# Build output
+bin/
+obj/
+
+# File temporanei di Visual Studio
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Configurazioni locali
+*.local.json
+
+# Altri file comuni inutili
+*.log
+*.tmp
+
+# Cartelle di backup
+_Backup*/

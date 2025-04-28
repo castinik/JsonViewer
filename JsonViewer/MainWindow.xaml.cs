@@ -345,36 +345,44 @@ namespace JsonViewer
         {
             if (item == null) return;
 
-            // Recupera il JsonNode associato
             JsonNode node = item.Tag as JsonNode;
             if (node == null) return;
 
-            // Se non è ancora espanso, simuliamo il caricamento
             if (!node.IsExpanded)
             {
-                item.Header = GetTextNode(node, "Loading...");
-                item.Items.Clear();
-
-                // Aspetta per far respirare la UI
-                await Task.Delay(5);
-
-                foreach (JsonNode child in node.Children)
+                if (node.Children.Count > 0)
                 {
-                    TreeViewItem visual = BuildVisualTree(child);
-                    item.Items.Add(visual);
-                }
+                    item.Header = GetTextNode(node, "Loading...");
+                    item.Items.Clear();
 
-                item.Header = GetTextNode(node);
+                    // Lascia respirare la UI
+                    await Task.Yield();
+                    await Task.Run(() => Thread.Sleep(50));
+
+                    foreach (JsonNode child in node.Children)
+                    {
+                        item.Items.Add(BuildVisualTree(child));
+                    }
+
+                    item.Header = OpenParentesis(node);
+                    item.Items.Add(CloseParentesis(node));
+                }
+                else
+                {
+                    item.Header = GetTextNode(node);
+                }
                 node.IsExpanded = true;
             }
 
-            // Espandi il nodo visivamente
+            // Espande visivamente il nodo
             item.IsExpanded = true;
 
-            // Ricorsione sui figli
-            foreach (TreeViewItem childItem in item.Items)
+            // Delay leggero per non congelare l'interfaccia
+            await Task.Delay(10);
+
+            foreach (TreeViewItem child in item.Items)
             {
-                await ExpandNodeRecursive(childItem);
+                await ExpandNodeRecursive(child);
             }
         }
         private void CollapseNodeRecursive(TreeViewItem item)
