@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace JsonViewer
@@ -18,6 +19,7 @@ namespace JsonViewer
     public partial class MainWindow : Window
     {
         private delegate void AutoDelegate();
+        private Span _lastSelectedSpan;
 
         public MainWindow()
         {
@@ -35,7 +37,7 @@ namespace JsonViewer
             if (dialog.ShowDialog() == true)
             {
                 FilePathLabel.Text = dialog.FileName;
-                CaricaFileJSON(dialog.FileName, "L");
+                CaricaFileJSON(dialog.FileName, TreeType.Left);
             }
         }
         private void OpenJsonFile_Right_Click(object sender, RoutedEventArgs eventArgs)
@@ -48,21 +50,21 @@ namespace JsonViewer
             if (dialog.ShowDialog() == true)
             {
                 FilePathLabelRight.Text = dialog.FileName;
-                CaricaFileJSON(dialog.FileName, "R");
+                CaricaFileJSON(dialog.FileName, TreeType.Right);
             }
         }
         private void EspandiTutto_Left_Click(object sender, RoutedEventArgs e)
         {
             foreach (var item in JsonTreeView.Items)
             {
-                ExpandNodeRecursive((TreeViewItem)item);
+                ExpandNodeRecursive((TreeViewItem)item, true, TreeType.Left);
             }
         }
         private void EspandiTutto_Right_Click(object sender, RoutedEventArgs e)
         {
             foreach (var item in JsonTreeViewRight.Items)
             {
-                ExpandNodeRecursive((TreeViewItem)item);
+                ExpandNodeRecursive((TreeViewItem)item, true, TreeType.Right);
             }
         }
         private void CollassaTutto_Left_Click(object sender, RoutedEventArgs e)
@@ -82,15 +84,15 @@ namespace JsonViewer
         #endregion
 
         #region ############################ CREAZIONE ALBERO ############################
-        private async void CaricaFileJSON(string path, String from)
+        private async void CaricaFileJSON(string path, TreeType type)
         {
             TreeView treeView = new TreeView();
-            switch (from)
+            switch (type)
             {
-                case "L":
+                case TreeType.Left:
                     treeView = JsonTreeView;
                     break;
-                case "R":
+                case TreeType.Right:
                     treeView = JsonTreeViewRight;
                     break;
             }
@@ -119,7 +121,6 @@ namespace JsonViewer
                 LoadingBar.Visibility = Visibility.Collapsed;
             }
         }
-        
         private JsonNode BuildLogicalTree(string name, JToken token)
         {
             JsonNode node = new JsonNode
@@ -146,6 +147,7 @@ namespace JsonViewer
 
             return node;
         }
+
         private TreeViewItem BuildVisualTree(JsonNode node)
         {
             TextBlock textBlock = GetTextNode(node);
@@ -173,6 +175,7 @@ namespace JsonViewer
             }
 
             JsonNode node = item.Tag as JsonNode;
+            if (node.Children.Count == 0) return;
             if (node.IsExpanded)
             {
                 item.Header = OpenParentesis(node);
@@ -206,6 +209,32 @@ namespace JsonViewer
             item.Header = GetTextNode(node);
         }
 
+        private void TreeItemSelected(JsonNode node, Span span)
+        {
+            if (_lastSelectedSpan != null)
+                _lastSelectedSpan.Background = Brushes.Transparent;
+
+            span.Background = Brushes.LightGray;
+            _lastSelectedSpan = span;
+        }
+
+        //private void TreeItemSelected(JsonNode node, TreeType type)
+        //{
+        //    if (node.Children.Count > 0) return;
+
+        //    switch (type)
+        //    {
+        //        case TreeType.Left:
+
+        //            break;
+        //        case TreeType.Right:
+
+        //            break;
+        //    }
+        //}
+        #endregion
+
+        #region ############################ FORMATTAZIONE ############################
         private TextBlock OpenParentesis(JsonNode node)
         {
             string header = String.Empty;
@@ -281,9 +310,16 @@ namespace JsonViewer
             }
 
             TextBlock textBlock = new TextBlock();
-            textBlock.Inlines.Add(new Run($"{node.Name} : ") { Foreground = Brushes.DarkBlue });
-            textBlock.Inlines.Add(new Run(valueType) { Foreground = GetColorForValue(node.Type) });
+            Span nameSpan = new Span(new Run($"{node.Name} : ") { Foreground = Brushes.DarkBlue });
+            Span valueSpan = new Span(new Run(valueType) { Foreground = GetColorForValue(node.Type) });
+
+            nameSpan.MouseLeftButtonDown += (s, e) => TreeItemSelected(node, nameSpan);
+            valueSpan.MouseLeftButtonDown += (s, e) => TreeItemSelected(node, valueSpan);
+
+            textBlock.Inlines.Add(nameSpan);
+            textBlock.Inlines.Add(valueSpan);
             textBlock.FontSize = 20;
+            //textBlock.MouseLeftButtonDown += JsonTreeViewLeft_SelectedItemChanged;
             return textBlock;
         }
         private string GetValuePreview(JValue token)
@@ -377,12 +413,30 @@ namespace JsonViewer
         #endregion
 
         #region ############################ ESPANDI E COLLASSA ############################
-        private async Task ExpandNodeRecursive(TreeViewItem item)
+        private async Task ExpandNodeRecursive(TreeViewItem item, bool isFirstFunc = false, TreeType type = TreeType.Default)
         {
             if (item == null) return;
 
             JsonNode node = item.Tag as JsonNode;
             if (node == null) return;
+
+            // Disabilito gli altri pulsanti
+            if (isFirstFunc)
+            {
+                switch (type)
+                {
+                    case TreeType.Left:
+                        btnCollapseLeft.IsEnabled = false;
+                        btnExpandLeft.IsEnabled = false;
+                        btnOpenLeft.IsEnabled = false;
+                        break;
+                    case TreeType.Right:
+                        btnCollapseRight.IsEnabled = false;
+                        btnExpandRight.IsEnabled = false;
+                        btnOpenRight.IsEnabled = false;
+                        break;
+                }
+            }
 
             // Se il nodo è gia stato espanso
             if (!node.IsExpanded)
@@ -419,6 +473,24 @@ namespace JsonViewer
             foreach (TreeViewItem child in item.Items)
             {
                 await ExpandNodeRecursive(child);
+            }
+
+            // Riabilito gli altri pulsanti
+            if (isFirstFunc)
+            {
+                switch (type)
+                {
+                    case TreeType.Left:
+                        btnCollapseLeft.IsEnabled = true;
+                        btnExpandLeft.IsEnabled = true;
+                        btnOpenLeft.IsEnabled = true;
+                        break;
+                    case TreeType.Right:
+                        btnCollapseRight.IsEnabled = true;
+                        btnExpandRight.IsEnabled = true;
+                        btnOpenRight.IsEnabled = true;
+                        break;
+                }
             }
         }
         private void CollapseNodeRecursive(TreeViewItem item)
