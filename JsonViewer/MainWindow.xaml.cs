@@ -20,6 +20,8 @@ namespace JsonViewer
     {
         private delegate void AutoDelegate();
         private Span _lastSelectedSpan;
+        private Span _lastSelectedSpanWhite;
+        private bool _isTreeExpandActive = true;
 
         public MainWindow()
         {
@@ -111,6 +113,7 @@ namespace JsonViewer
                 treeView.Items.Clear();
                 treeView.Items.Add(BuildVisualTree(rootNode));
                 treeView.Visibility = Visibility.Visible;
+                treeView.MouseDoubleClick += TreeView_MouseDoubleClick;
             }
             catch (Exception ex)
             {
@@ -121,6 +124,7 @@ namespace JsonViewer
                 LoadingBar.Visibility = Visibility.Collapsed;
             }
         }
+
         private JsonNode BuildLogicalTree(string name, JToken token)
         {
             JsonNode node = new JsonNode
@@ -166,7 +170,10 @@ namespace JsonViewer
         }
         private async void TreeViewItem_Expanded(object sender, RoutedEventArgs e)
         {
-            if (e.RoutedEvent != null) e.Handled = true;
+            if (e.RoutedEvent != null)
+            {
+                e.Handled = true;
+            }
 
             TreeViewItem item = sender as TreeViewItem;
             if (item == null)
@@ -175,7 +182,11 @@ namespace JsonViewer
             }
 
             JsonNode node = item.Tag as JsonNode;
-            if (node.Children.Count == 0) return;
+            if (node.Children.Count == 0)
+            {
+                return;
+            }
+
             if (node.IsExpanded)
             {
                 item.Header = OpenParentesis(node);
@@ -209,15 +220,35 @@ namespace JsonViewer
             item.Header = GetTextNode(node);
         }
 
-        private void TreeItemSelected(JsonNode node, Span span)
+        private void TreeItemSelected(JsonNode node, Span span, Span spanToWhite)
         {
             if (_lastSelectedSpan != null)
+            {
                 _lastSelectedSpan.Background = Brushes.Transparent;
+            }
+
+            if (_lastSelectedSpanWhite != null)
+            {
+                _lastSelectedSpanWhite.Background = Brushes.Transparent;
+            }
 
             span.Background = Brushes.LightGray;
             _lastSelectedSpan = span;
+            spanToWhite.Background = Brushes.White;
+            _lastSelectedSpanWhite = spanToWhite;
         }
+        private void TreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            DependencyObject clickedItem = e.OriginalSource as DependencyObject;
 
+            while (clickedItem != null && !(clickedItem is DependencyObject))
+            {
+                clickedItem = VisualTreeHelper.GetParent(clickedItem);
+            }
+
+            TreeViewItem item = clickedItem as TreeViewItem;
+
+        }
         //private void TreeItemSelected(JsonNode node, TreeType type)
         //{
         //    if (node.Children.Count > 0) return;
@@ -313,8 +344,9 @@ namespace JsonViewer
             Span nameSpan = new Span(new Run($"{node.Name} : ") { Foreground = Brushes.DarkBlue });
             Span valueSpan = new Span(new Run(valueType) { Foreground = GetColorForValue(node.Type) });
 
-            nameSpan.MouseLeftButtonDown += (s, e) => TreeItemSelected(node, nameSpan);
-            valueSpan.MouseLeftButtonDown += (s, e) => TreeItemSelected(node, valueSpan);
+            nameSpan.MouseLeftButtonDown += (s, e) => TreeItemSelected(node, nameSpan, valueSpan);
+            valueSpan.MouseLeftButtonDown += (s, e) => TreeItemSelected(node, valueSpan, nameSpan);
+
 
             textBlock.Inlines.Add(nameSpan);
             textBlock.Inlines.Add(valueSpan);
@@ -413,12 +445,28 @@ namespace JsonViewer
         #endregion
 
         #region ############################ ESPANDI E COLLASSA ############################
+
+        private void StopTreeExpanding(object sender, RoutedEventArgs e)
+        {
+            _isTreeExpandActive = false;
+        }
         private async Task ExpandNodeRecursive(TreeViewItem item, bool isFirstFunc = false, TreeType type = TreeType.Default)
         {
-            if (item == null) return;
+            if (!_isTreeExpandActive && !isFirstFunc)
+            {
+                return;
+            }
+
+            if (item == null)
+            {
+                return;
+            }
 
             JsonNode node = item.Tag as JsonNode;
-            if (node == null) return;
+            if (node == null)
+            {
+                return;
+            }
 
             // Disabilito gli altri pulsanti
             if (isFirstFunc)
@@ -429,11 +477,13 @@ namespace JsonViewer
                         btnCollapseLeft.IsEnabled = false;
                         btnExpandLeft.IsEnabled = false;
                         btnOpenLeft.IsEnabled = false;
+                        btnStopLeft.Visibility = Visibility.Visible;
                         break;
                     case TreeType.Right:
                         btnCollapseRight.IsEnabled = false;
                         btnExpandRight.IsEnabled = false;
                         btnOpenRight.IsEnabled = false;
+                        btnStopRight.Visibility = Visibility.Visible;
                         break;
                 }
             }
@@ -484,13 +534,16 @@ namespace JsonViewer
                         btnCollapseLeft.IsEnabled = true;
                         btnExpandLeft.IsEnabled = true;
                         btnOpenLeft.IsEnabled = true;
+                        btnStopLeft.Visibility = Visibility.Hidden;
                         break;
                     case TreeType.Right:
                         btnCollapseRight.IsEnabled = true;
                         btnExpandRight.IsEnabled = true;
                         btnOpenRight.IsEnabled = true;
+                        btnStopRight.Visibility = Visibility.Hidden;
                         break;
                 }
+                _isTreeExpandActive = true;
             }
         }
         private void CollapseNodeRecursive(TreeViewItem item)

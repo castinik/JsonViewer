@@ -36,4 +36,3 @@ D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer
 D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer.exe
 D:\Documents\Programmazione\FORMS_WPF\JsonViewer\JsonViewer\obj\Debug\JsonViewer.pdb
 C:\Users\Nicolo Castagnoli\Documents\Lavoro\Tools\JsonViewer\JsonViewer\obj\Debug\JsonViewer_Content.g.cs
-C:\Users\Nicolo Castagnoli\Documents\Lavoro\Tools\JsonViewer\JsonViewer\obj\Debug\App.baml
